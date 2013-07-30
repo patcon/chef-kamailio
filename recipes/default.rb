@@ -49,22 +49,36 @@ remote_file "#{Chef::Config[:file_cache_path]}/#{node['kamailio']['server']['dow
   action :create_if_missing
 end
 
-bash "compile-kamailio" do
+bash "Compile and Install Kamailio" do
   cwd Chef::Config[:file_cache_path]
   code <<-EOH
     tar zxvf #{node['kamailio']['server']['download_file']}
     cd kamailio-*
-    make prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" SCTP=1 STUN=1 group_include="standard standard-dep stable mysql postgres radius presence" include_modules="snmpstats" cfg
+    make clean
+    make prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" SCTP=1 STUN=1 group_include="standard standard-dep stable mysql postgres tls radius presence" include_modules="snmpstats" cfg
     make bin_prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" all 
     make bin_prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" modules-all 
     make bin_prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" install
     install -m755 ./pkg/kamailio/centos/6/kamailio.init /etc/init.d/kamailio
     install -m644 ./pkg/kamailio/centos/6/kamailio.sysconfig /etc/sysconfig/kamailio
+    # Remove configs
+    rm /etc/kamailio/{kamailio.cfg,kamailio-local.cfg,kamctlrc,tls.cfg,kamailio-selfsigned.*}
   EOH
   creates "/usr/sbin/kamailio"
 end
 
-#user node['graylog2']['web_user'] do
+bash "Create SSL Certificates" do
+  cwd "/etc/kamailio"
+  code <<-EOH
+  umask 077
+  openssl genrsa 2048 > kamailio.key
+  openssl req -subj "#{node['kamailio']['server']['ssl_req']}" -new -x509 -nodes -sha1 -days 3650 -key kamailio.key > kamailio.crt
+  cat kamailio.key kamailio.crt > kamailio.pem
+  EOH
+  creates "/etc/kamailio/kamailio.pem"
+end
+
+# Create kamailio user
 user "kamailio" do
   home "/var/tmp"
   comment "Kamailio user"
@@ -72,3 +86,66 @@ user "kamailio" do
   shell "/sbin/nologin"
 end
 
+# Kamailio service
+service "kamailio" do
+  action [:start, :enable]
+end
+
+# Create DB_TEXT database directory
+directory "/var/lib/kamailio" do
+  owner "kamailio"
+  group "kamailio"
+  mode 00750
+  recursive true
+end
+
+# Fix subscriber table definition in dbtext
+file "/usr/share/kamailio/dbtext/kamailio/subscriber" do
+  content "id(int,auto) username(string) domain(string) password(string) email_address(string,null) ha1(string) ha1b(string) rpid(string,null)"
+end
+
+# Main config file
+template "/etc/kamailio/kamailio.cfg" do
+  source 'kamailio-advanced.erb'
+  mode 00644
+  notifies :reload, 'service[kamailio]', :immediately
+  if node['kamailio']['server']['manage_config']
+    action :create
+  else
+    action :create_if_missing
+  end
+end
+  
+# Local definitions file
+template "/etc/kamailio/kamailio-local.cfg" do
+  source 'kamailio-local.erb'
+  mode 00644
+  notifies :reload, 'service[kamailio]', :immediately
+  if node['kamailio']['server']['manage_config']
+    action :create
+  else
+    action :create_if_missing
+  end
+end
+
+# kamctlrc
+template "/etc/kamailio/kamctlrc" do
+  source 'kamctlrc.erb'
+  mode 00644
+  if node['kamailio']['server']['manage_config'] == false
+    action :create_if_missing
+  else
+    action :create
+  end
+end
+ 
+# tls.cfg
+template "/etc/kamailio/tls.cfg" do
+  source 'tls.erb'
+  mode 00644
+  if node['kamailio']['server']['manage_config'] == false
+    action :create_if_missing
+  else
+    action :create
+  end
+end

@@ -77,6 +77,39 @@ Vagrant.configure("2") do |config|
         :server_root_password => 'rootpass',
         :server_debian_password => 'debpass',
         :server_repl_password => 'replpass'
+      },
+      :kamailio => {
+        :server => {
+          :manage_config => true,
+          :db_host => "127.0.0.1",
+          :db_user => "kamailio",
+          :db_pass => "kamailio",
+          :pstn_gw_ip => "192.168.122.96",
+          :pstn_gw_port => "5060",
+          :voicemail_gw_ip => "192.168.122.96",
+          :voicemail_gw_port => "5060",
+          :defines => {
+            :WITH_DEBUG => true,
+            :WITH_NAT => false,
+            :WITH_PSTN => true,
+            :WITH_TLS => false,
+            :WITH_XHTTP => false,
+            :WITH_XMLRPC => false,
+            :WITH_XHTTP_RPC => false,
+            :WITH_XHTTP_PI => false,
+            :WITH_ANTIFLOOD => true,
+            :WITH_BLOCK3XX => true,
+            :WITH_VOICEMAIL => true,
+            :WITH_MYSQL => true,
+            :WITH_AUTH => true,
+            :WITH_IPAUTH => true,
+            :WITH_USRLOCDB => true,
+            :WITH_PRESENCE => true,
+            :WITH_ALIASDB => true,
+            :WITH_SPEEDDIAL => true,
+            :WITH_MULTIDOMAIN => true,
+          }
+        }
       }
     }
 
