@@ -66,8 +66,8 @@ default['kamailio']['server']['defines']['WITH_SPEEDDIAL'] = false
 default['kamailio']['server']['defines']['WITH_MULTIDOMAIN'] = false
 
 ## Build time attributes. You should not need to change them
-default['kamailio']['server']['download_url'] = "http://www.kamailio.org/pub/kamailio/latest/src"
 default['kamailio']['server']['version'] = "4.0.2"
+default['kamailio']['server']['download_url'] = "http://www.kamailio.org/pub/kamailio/#{node['kamailio']['server']['version']}/src"
 default['kamailio']['server']['download_file'] = "kamailio-#{node['kamailio']['server']['version']}_src.tar.gz"
 
 case node['platform_family']

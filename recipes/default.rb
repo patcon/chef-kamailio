@@ -55,14 +55,21 @@ bash "Compile and Install Kamailio" do
     tar zxvf #{node['kamailio']['server']['download_file']}
     cd kamailio-*
     make clean
-    make prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" SCTP=1 STUN=1 group_include="standard standard-dep stable mysql postgres tls radius presence" include_modules="snmpstats" cfg
+    echo "Config"
+    make prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" SCTP=1 STUN=1 group_include="standard standard-dep stable mysql postgres tls radius presence" include_modules="snmpstats tls" cfg
+    echo "make all"
     make bin_prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" all 
+    echo "make modules-all"
     make bin_prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" modules-all 
+    echo "make install"
     make bin_prefix=/usr cfg_prefix=/ cfg_target=/etc/kamailio/ modules_dirs="modules" install
+    echo "install initscript"
     install -m755 ./pkg/kamailio/centos/6/kamailio.init /etc/init.d/kamailio
+    echo "install sysconfig"
     install -m644 ./pkg/kamailio/centos/6/kamailio.sysconfig /etc/sysconfig/kamailio
-    # Remove configs
-    rm /etc/kamailio/{kamailio.cfg,kamailio-local.cfg,kamctlrc,tls.cfg,kamailio-selfsigned.*}
+
+    echo "remove configs"
+    rm -f /etc/kamailio/{kamailio.cfg,kamailio-local.cfg,kamctlrc,tls.cfg,kamailio-selfsigned.*}
   EOH
   creates "/usr/sbin/kamailio"
 end
