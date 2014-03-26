@@ -6,14 +6,14 @@ Vagrant.configure("2") do |config|
   # options are documented and commented below. For a complete reference,
   # please see the online documentation at vagrantup.com.
 
-  config.vm.hostname = "chef-repo-clean-berkshelf"
+  config.vm.hostname = "modularit-kamailio"
 
   # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "centos64"
 
   # The url from where the 'config.vm.box' box will be fetched if it
   # doesn't already exist on the user's system.
-  config.vm.box_url = "https://dl.dropbox.com/u/31081437/Berkshelf-CentOS-6.3-x86_64-minimal.box"
+  config.vm.box_url = "/home/kuko/iso/centos64.box"
 
   # Assign this VM to a host-only network IP, allowing you to access it
   # via the IP. Host-only networks can talk to the host machine as well as
@@ -36,6 +36,8 @@ Vagrant.configure("2") do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
+  config.vm.synced_folder "../data", "/vagrant_data", :disabled => true, :type => "nfs"
+  config.vm.synced_folder ".", "/vagrant", :disabled => true, :type => "nfs"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -52,11 +54,20 @@ Vagrant.configure("2") do |config|
   # View the documentation for the provider you're using for more
   # information on available options.
 
-  config.ssh.max_tries = 40
-  config.ssh.timeout   = 120
+  #config.ssh.max_tries = 40
+  #config.ssh.timeout   = 120
+
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "qemu"
+    libvirt.host = "localhost"
+    libvirt.connect_via_ssh = true
+    libvirt.username = "root"
+    libvirt.id_ssh_key_file = "id_dsa"
+    libvirt.storage_pool_name = "default"
+  end
 
   # The path to the Berksfile to use with Vagrant Berkshelf
-  # config.berkshelf.berksfile_path = "./Berksfile"
+  #config.berkshelf.berksfile_path = "../../Berksfile"
 
   # Enabling the Berkshelf plugin. To enable this globally, add this configuration
   # option to your ~/.vagrant.d/Vagrantfile file
@@ -81,7 +92,7 @@ Vagrant.configure("2") do |config|
       :kamailio => {
         :server => {
           :manage_config => true,
-          :db_host => "127.0.0.1",
+          :db_host => "localhost",
           :db_user => "kamailio",
           :db_pass => "kamailio",
           :pstn_gw_ip => "192.168.122.96",
@@ -114,7 +125,7 @@ Vagrant.configure("2") do |config|
     }
 
     chef.run_list = [
-        "recipe[modularit-kamailio::default]"
+        "recipe[mysql::server]","recipe[modularit-kamailio::default]"
     ]
   end
 end
